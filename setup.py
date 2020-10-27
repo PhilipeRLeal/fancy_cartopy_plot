@@ -1,10 +1,8 @@
 
 
+
+from setuptools import setup, find_packages
 import glob
-try:
-    from setuptools import setup, find_packages
-except ImportError:
-    from distutils.core import setup, find_packages
 
 from version_file_seeker import find_version
 
@@ -47,7 +45,7 @@ setup_requirements = ['pytest-runner', ]
 test_requirements = ['pytest', ]
 
 package_name = 'fancy_cartopy_plot'
-url = 'https://github.com/PhilipeRLeal/fancy_cartopy_plot.git'
+url = 'https://github.com/PhilipeRLeal/fancy_cartopy_plot'
 
 setup(name=package_name,
     author="Philipe Riskalla Leal",

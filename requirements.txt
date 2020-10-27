@@ -5,3 +5,14 @@ geopy
 geopandas
 shapely
 pandas
+pytest
+pytest-runner
+pip
+bumpversion
+wheel
+watchdog
+flake8
+tox
+coverage
+Sphinx
+twine
