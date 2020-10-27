@@ -46,7 +46,8 @@ setup_requirements = ['pytest-runner', ]
 
 test_requirements = ['pytest', ]
 
-package_name = 'fancy_spatial_geometries_plot'
+package_name = 'fancy_cartopy_plot'
+url = 'https://github.com/PhilipeRLeal/fancy_cartopy_plot.git'
 
 setup(name=package_name,
     author="Philipe Riskalla Leal",
@@ -99,7 +100,7 @@ setup(name=package_name,
     test_suite='nose.collector',
     tests_require=['nose'],
     
-    url='https://github.com/PhilipeRLeal/fancy_spatial_geometries_plot',
+    url=url,
     
     download_url='TODO',
         
