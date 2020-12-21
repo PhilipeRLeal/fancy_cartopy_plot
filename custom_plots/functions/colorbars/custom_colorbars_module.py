@@ -12,11 +12,19 @@ pd.set_option('display.max_columns', 500)
 
 import matplotlib.pyplot as plt
 
-
 import matplotlib as mpl
         
 from matplotlib import ticker
 from matplotlib import colorbar
+
+def null_ticks(x,y):
+    return ''
+    
+    
+
+def custom_tick_func_formatter(custom_string, x, y=None):
+    return '{0}'.format(custom_string).format(x)    
+
 
 class custom_colorbars():    
     
@@ -24,12 +32,15 @@ class custom_colorbars():
      def add_colorbar_for_axes(axes, vmax, 
                               vmin,
                               n_ticks_in_colorbar=4, 
-                              shrink=0.95, pad=0.02,
+                              shrink=0.5,
+                              fraction=0.1,
+                              pad=0.02,
                               cmap='viridis',
                               matplotlib_colors_normalize=None,
 							  n_colors_in_cmap=None,
 							  colorbar_tick_fontsize=7,
-                              colorbar_ax_yticks_format='%.2f',
+                              colorbar_ax_yticks_format='{0:.2f}',
+                              size="5%",
                               **fbar_kwds):
 
 
@@ -135,25 +146,37 @@ class custom_colorbars():
     
          fig = axes.get_figure()
     
-     
-         cbar = fig.colorbar(sm, ax=axes, shrink=shrink, pad=pad, 
-                            format=colorbar_ax_yticks_format, **fbar_kwds)   
-        
-         from matplotlib import ticker
-        
-         def null_ticks(x,y):
-             return ''
-         
+         if isinstance(colorbar_ax_yticks_format, (ticker.Formatter)):
+             tick_funcF = colorbar_ax_yticks_format
             
-         # xaxis   
-            
-         cbar.ax.xaxis.set_major_formatter(ticker.FuncFormatter(null_ticks))
-        
-         cbar.ax.xaxis.set_ticks([])
+         elif isinstance(colorbar_ax_yticks_format, (str)):
+             
+             f = lambda x, y: custom_tick_func_formatter(colorbar_ax_yticks_format, x, y)
+             tick_funcF = ticker.FuncFormatter(f)
+             
          
-         # yaxis
+                             
+         cbar = fig.colorbar(sm, 
+                             ax=axes,
+                             shrink=shrink,
+                             fraction=fraction,
+                             pad=pad,
+                             
+                             format=tick_funcF, 
+                             **fbar_kwds)   
+        
+         
+         # Locators
          
          cbar.ax.yaxis.set_major_locator(ticker.MaxNLocator(n_ticks_in_colorbar))
+         
+         cbar.ax.xaxis.set_ticks([])
+            
+         # Formaters
+         
+         cbar.ax.yaxis.set_major_formatter(tick_funcF)
+         
+         cbar.ax.xaxis.set_major_formatter(ticker.FuncFormatter(null_ticks))
         
          cbar.ax.tick_params(labelsize=colorbar_tick_fontsize)
     
@@ -164,7 +187,7 @@ class custom_colorbars():
 
     
      @ staticmethod
-     def add_colorbar_for_fig (fig, 
+     def add_colorbar_for_fig(fig, 
                               vmin,
                               vmax, 
                               n_ticks_in_colorbar=4,
@@ -191,6 +214,10 @@ class custom_colorbars():
 			n_ticks_in_colorbar: sets the number of ticks to be plotted in the colorbar
 			
 			----------------------------------------------------------------------------------------------
+            
+            Bounding_box = [left, bottom, width, height]: in figure fractions
+            
+            ----------------------------------------------------------------------------------------------
             
 			round_float_value_colorbar_tickslabels: the resolution after the decimal separator to be applied
 			
@@ -267,22 +294,22 @@ class custom_colorbars():
         
         
          cax = fig.add_axes(Bounding_box)
+         
+         
+         
+         
+         f = lambda x, y: custom_tick_func_formatter(colorbar_ax_yticks_format, x, y)
+         tick_funcF = ticker.FuncFormatter(f)
+         
         
+         cbar = fig.colorbar(sm, cax=cax, #format=tick_funcF, 
+                             **fig_colorbar_kwds)
         
-         cbar = fig.colorbar(sm, cax=cax, format=colorbar_ax_yticks_format, **fig_colorbar_kwds)
+         cbar.ax.yaxis.set_major_locator(ticker.MaxNLocator(n_ticks_in_colorbar))
         
-         cbar.ax.yaxis.set_major_formatter(ticker.MaxNLocator(n_ticks_in_colorbar))
-        
-
-        
-         def null_ticks(x,y):
-             return ''
         
          cbar.ax.xaxis.set_major_formatter(ticker.FuncFormatter(null_ticks))
         
-        
-        
-         cbar.ax.xaxis.set_ticks([])
          cbar.ax.tick_params(labelsize=colorbar_tick_fontsize)
          cbar.ax.xaxis.set_ticks([])
 

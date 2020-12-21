@@ -1,5 +1,42 @@
 
 import matplotlib.patches as mpatches
+
+def add_north_arrow_to_axes(ax, 
+                            x_tail = 0.892,
+                            y_tail = 0.08,
+                            x_head = 0.892,
+                            y_head = 0.12,
+                            width=0.1,
+                            label_pad=0.02,
+                            fontsize=14,
+                            transform=None):
+
+    
+    if transform==None:
+        transform=ax.transAxes
+    
+    
+    
+    dx = x_head - x_tail
+    dy = y_head - y_tail
+
+
+    arrow = mpatches.Arrow(x_tail, y_tail, dx, dy, width=width, transform=transform, color='k')
+    
+    ax.add_patch(arrow)
+
+    ax.text(x_head, 
+			y_head + label_pad , 
+			s='N', 
+			size=fontsize, 
+			ha='center', 
+			va='center',
+			color='black', 
+			transform=transform)
+            
+    return ax
+
+
 def add_north_arrow_to_fig(fig, 
                     x_tail = 0.892,
                     y_tail = 0.08,

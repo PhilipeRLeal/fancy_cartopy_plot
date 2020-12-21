@@ -15,7 +15,9 @@ states_provinces = cfeature.NaturalEarthFeature(
         scale='10m',
         facecolor='none')
 
-def add_background(ax):
-
-    ax.add_feature(states_provinces, edgecolor='gray')
-    ax.add_feature(Coastline, edgecolor='gray')
+def add_background(ax, **kwargs):
+    old_bounds = ax.get_extent()
+    
+    ax.add_feature(states_provinces, zorder=-1, **kwargs)
+    ax.add_feature(Coastline, zorder=-1, **kwargs)
+    ax.set_extent(old_bounds)

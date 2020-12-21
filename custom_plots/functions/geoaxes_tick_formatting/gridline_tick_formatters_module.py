@@ -5,55 +5,121 @@ Created on Wed Jun 26 19:09:27 2019
 @author: lealp
 """
 
-
+import matplotlib.pyplot as plt
 from matplotlib import ticker
+from formatters import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
+import cartopy.crs as ccrs
 
-from .helper_functions.locators_and_formatters_module import LongitudeFormatter, LatitudeFormatter
+_DEGREE_SYMBOL = u'\u00B0'
 
 
-def set_gridline_tick_axis_positions(gridliner , positions = dict(top=False, 
-															   bottom=True, 
-															   left=True, 
-															   right=False)):
+def set_gridline_tick_axis_positions(gridliner , 
+                                     gridline_tick_axis_positions
+                                     ):
 	 
-	 gridliner.top_labels  = positions['top']
-	 gridliner.bottom_labels  = positions['bottom']
+	 gridliner.top_labels  = gridline_tick_axis_positions['top_labels']
+	 gridliner.bottom_labels  = gridline_tick_axis_positions['bottom_labels']
 	 
-	 gridliner.right_labels  = positions['right']
-	 gridliner.left_labels = positions['left']
+	 gridliner.right_labels  = gridline_tick_axis_positions['right_labels']
+	 gridliner.left_labels = gridline_tick_axis_positions['left_labels']
 	 
 	 return gridliner
 	 
+ 
 
-def set_number_of_ticks_in_Gridliner(nbins, gridliner):
-
-	
-    gridliner.ylocator = ticker.MaxNLocator(nbins)
-    gridliner.xlocator = ticker.MaxNLocator(nbins)
+def set_number_of_ticks_in_Gridliner(gridliner, nbins, locator='xlocator'):
+    locator = getattr(gridliner, locator)
+    
+    locator = ticker.MaxNLocator(nbins)
     
     return gridliner
 
-def change_gridline_tick_formating(gridliner, gridline_tick_formating='.2f', axis='yaxis', decimal_separator=',', geographical_symbol='°'):  
+
+
+
+def change_gridline_tick_formating(gridliner, gridline_tick_formating='{0:.2f}', axis='yaxis', 
+                                   decimal_separator=',', geographical_symbol=_DEGREE_SYMBOL):  
 	 
-	 def Format_p(x, counter):
-		
-		 return '{0:{1}}{2}'.format(x, gridline_tick_formating, geographical_symbol).replace('.', decimal_separator)
+    def custom_tick_func_formatter(x, y):
+        ticklabel = '{0}'.format(gridline_tick_formating).format(x) 
+        
+        return ticklabel.replace('.', decimal_separator) + geographical_symbol
 	 
-	 if axis.lower() == 'both':
+    if axis.lower() == 'both':
  
-		 gridliner.xformatter = ticker.FuncFormatter(Format_p)
-		 gridliner.yformatter = ticker.FuncFormatter(Format_p)
+        gridliner.xformatter = ticker.FuncFormatter(lambda x, y : custom_tick_func_formatter(x, y))
+        gridliner.yformatter = ticker.FuncFormatter(lambda x, y : custom_tick_func_formatter(x, y))
 			 
-	 else:
-		 if axis.lower().startswith('x'):
-			 gridliner.xformatter = ticker.FuncFormatter(Format_p)
-		 else:
-			 gridliner.yformatter = ticker.FuncFormatter(Format_p)
+    else:
+        if axis.lower().startswith('x'):
+            gridliner.xformatter = ticker.FuncFormatter(lambda x, y : custom_tick_func_formatter(x, y))
+        else:
+            gridliner.yformatter = ticker.FuncFormatter(lambda x, y : custom_tick_func_formatter(x, y))
 	
 	
-	 return gridliner
+    return gridliner
 
 
+def format_gridline_major_ticklabels(gl, gridline_tick_formating, decimal_separator='.', 
+                                     geographical_symbol=_DEGREE_SYMBOL):
+    
+    
+    # Instanciating the Formater for the gridline
+    
+    longitude_tick_formating = gridline_tick_formating['longitude_tick_formating']
+    
+    west_hemisphere_str = longitude_tick_formating.get('west_hemisphere_str', 'W')  
+    east_hemisphere_str = longitude_tick_formating.get('east_hemisphere_str', 'E')  
+    degree_symbol = longitude_tick_formating.get('degree_symbol', '°')
+    
+    
+    lon_formatter = LONGITUDE_FORMATTER(degree_symbol=degree_symbol,
+                                       west_hemisphere_str=west_hemisphere_str,
+                                       east_hemisphere_str=east_hemisphere_str)
+    
+    
+           
+    latitude_tick_formating = gridline_tick_formating['latitude_tick_formating']
+    
+    north_hemisphere_str = latitude_tick_formating.get('north_hemisphere_str', 'N')  
+    south_hemisphere_str = latitude_tick_formating.get('south_hemisphere_str', 'S')  
+    degree_symbol = latitude_tick_formating.get('degree_symbol', '°')
+    	 
+    
+    lat_formatter = LATITUDE_FORMATTER(degree_symbol=degree_symbol,
+                                      north_hemisphere_str=north_hemisphere_str,
+                                      south_hemisphere_str=south_hemisphere_str)
+    
+   
+    #############################
+    
+    
+    
+    change_gridline_tick_formating(gl,  
+                                   gridline_tick_formating=longitude_tick_formating.get('number_format', '{0:.2f}'), 
+                                   axis='x', 
+                                   decimal_separator=decimal_separator,
+                                   geographical_symbol=geographical_symbol)
+    
+    change_gridline_tick_formating(gl,  
+                                   gridline_tick_formating=latitude_tick_formating.get('number_format', '{0:.2f}'), 
+                                   axis='y', 
+                                   decimal_separator=decimal_separator,
+                                   geographical_symbol=geographical_symbol)
+                                   
+    
+    # setting the gridline Formatter
+    
+        # The xformatter does no work for subplots at the moment.
+        # Wait to see what happens in : https://stackoverflow.com/questions/65298032/how-can-one-set-cartopys-gridline-label-styles-major-xticks-and-minor-xticks
+    
+    gl.xformatter = lon_formatter
+    gl.yformatter = lat_formatter
+    
+    return gl
+    
+    
+    
     
 def add_custom_gridline(geo_axes, 
                     
@@ -61,39 +127,44 @@ def add_custom_gridline(geo_axes,
                                        linewidth=1, 
                                     color='black', 
                                     alpha=0.35, 
-                                    linestyle='--'),
+                                    linestyle='--',
+                                    x_inline=False, y_inline=False),
                                        
                         n_coordinate_ticks={'x_number':3,  'y_number':3},
+                        
+                        ticklabel_padding={'xpadding':5,  'ypadding':3},
                     
-                        gridline_tick_formating=dict(latitude_tick_formating={'number_format':'.2f', # com duas casas decimais
+                        gridline_tick_formating=dict(latitude_tick_formating={'number_format':'{0:.2f}', # com duas casas decimais
                                                               'degree_symbol':'°', # u'\u00B0'
                                                               'north_hemisphere_str': 'N',
                                                               'south_hemisphere_str': 'S'} ,
                                                        
 
-                        longitude_tick_formating={'number_format':'.2f', # com duas casas decimais
-                                                               'degree_symbol':'°', # u'\u00B0'
-                                                               'dateline_direction_label':True, # ONLY APPLICABLE TO LONGITUDE DATA
-                                                               'west_hemisphere_str': 'O',
-                                                               'east_hemisphere_str': 'L'}) ,
-                    
-						gridline_xlabel_style = {'color': 'black', 
-                                               #'weight': 'bold', 
-                                               'rotation':90,
-                                               'fontsize':12},
+                        longitude_tick_formating={'number_format':'{0:.2f}', # com duas casas decimais
+                                                  'degree_symbol':'°', # u'\u00B0'
+                                                  # ONLY APPLICABLE TO LONGITUDE DATA
+                                                  'west_hemisphere_str': 'O',
+                                                  'east_hemisphere_str': 'L'}) ,
+                      
+						gridline_xlabel_style = {'color': 'k', 
+                                                 'xpadding':10,
+                                                 'weight': 'normal', 
+                                                 'rotation':90,
+                                                 'size':12,
+                                                 'ha':'right'},
                  
-                        gridline_ylabel_style = {'color': 'black', 
-                                           #'weight': 'bold', 
-                                           'rotation':0,
-                                           'fontsize':18},  
-							
+                        gridline_ylabel_style = {'color': 'k', 
+                                                 'ypadding':10,
+                                                 'weight': 'normal', 
+                                                 'rotation':0,
+                                                 'size':12,
+                                                 'ha':'left'},  
 							
     
-                    
-						gridline_tick_axis_positions={'xlabels_top':False,
-												 'ylabels_left':True,
-												 'ylabels_right':False,
-												 'xlabels_bottom':True}		,
+						gridline_tick_axis_positions={'top_labels':False,
+												 'left_labels':True,
+												 'right_labels':False,
+												 'bottom_labels':True}		,
                                 
                         decimal_separator='.',										   
                         geographical_symbol='°'
@@ -143,96 +214,54 @@ def add_custom_gridline(geo_axes,
     """
  
     
-    gl = geo_axes.gridlines(crs=geo_axes.projection, **gridline_attr) # axes projection here too
+    gl = geo_axes.gridlines(crs=ccrs.PlateCarree(), **gridline_attr) # axes projection here too
     
-    		
-    ## Better set to no standard labeling so to avoid possible overlay of custom and standard labels in geo_axes
+    # Setting which position are to be placed the coordinate - ticklabels
     
-
-    
-    from matplotlib import ticker
-    
-    
-    gl.ylocator = ticker.MaxNLocator(nbins=n_coordinate_ticks['y_number'])
-    gl.xlocator = ticker.MaxNLocator(nbins=n_coordinate_ticks['x_number'])
+    gl = set_gridline_tick_axis_positions(gl , 
+                                     gridline_tick_axis_positions
+                                     )		
     
     
     
     
-    set_gridline_tick_axis_positions(gl , 
-                                     positions = dict(top=gridline_tick_axis_positions['xlabels_top'], 
-													  bottom=gridline_tick_axis_positions['xlabels_bottom'], 
-													  left=gridline_tick_axis_positions['ylabels_left'], 
-													  right=gridline_tick_axis_positions['ylabels_right']
-                                                      )
-                                     )
-       
+    # setting the gridline Formatter
     
-    # Formater do gridline
+        # There are some problems in the gridline Formatter
+        # Wait to see what happens in : https://stackoverflow.com/questions/65298032/how-can-one-set-cartopys-gridline-label-styles-major-xticks-and-minor-xticks
     
-    
-    
-    longitude_tick_formating = gridline_tick_formating['longitude_tick_formating']
-    
-    		
-    
-    number_format = longitude_tick_formating.get('number_format', '.2f')
-    west_hemisphere_str = longitude_tick_formating.get('west_hemisphere_str', 'W')  
-    east_hemisphere_str = longitude_tick_formating.get('east_hemisphere_str', 'E')  
-    degree_symbol = longitude_tick_formating.get('degree_symbol', '')
-    dateline_direction_label = longitude_tick_formating.get('dateline_direction_label', False)
-    
-    
-    lon_formatter = LongitudeFormatter(number_format=number_format,
-                                       degree_symbol=degree_symbol,
-                                       west_hemisphere_str=west_hemisphere_str,
-                                       east_hemisphere_str=east_hemisphere_str,
-                                       dateline_direction_label=dateline_direction_label)
-    
-    
-           
-    latitude_tick_formating = gridline_tick_formating['latitude_tick_formating']
-    
-    number_format = latitude_tick_formating.get('number_format', '.2f')
-    
-    north_hemisphere_str = latitude_tick_formating.get('north_hemisphere_str', 'N')  
-    south_hemisphere_str = latitude_tick_formating.get('south_hemisphere_str', 'S')  
-    degree_symbol = latitude_tick_formating.get('degree_symbol', '')
-    
-    def Format_p(x, counter):
-		
-        return '{0:{1}}'.format(x, '.2f').replace('.', ',')
-	 
-	 
- 
-		 
-    
-    lat_formatter = LatitudeFormatter(number_format=number_format,
-                                      degree_symbol=degree_symbol,
-                                      north_hemisphere_str=north_hemisphere_str,
-                                      south_hemisphere_str=south_hemisphere_str)
-    
-    
-    
-    
-    
-    change_gridline_tick_formating(gl,  
-                                   gridline_tick_formating=longitude_tick_formating.get('number_format', '.2f'), 
-                                   axis='x', decimal_separator=decimal_separator,
-                                   geographical_symbol=geographical_symbol)
-    
-    change_gridline_tick_formating(gl,  
-                                   gridline_tick_formating=latitude_tick_formating.get('number_format', '.2f'), 
-                                   axis='y', decimal_separator=decimal_separator,
-                                   geographical_symbol=geographical_symbol)
-       
-    
+        # The solution seems to be in respect to the order of settings of the 
+        # gridliner
     gl.xlabel_style = gridline_xlabel_style
+    
     gl.ylabel_style = gridline_ylabel_style
     
     
-    gl.xformatter = lon_formatter
-    gl.yformatter = lat_formatter
+    # Setting ticklabels formatters
+    
+    
+    gl = format_gridline_major_ticklabels(gl, gridline_tick_formating, 
+                                     decimal_separator=decimal_separator, 
+                                     geographical_symbol=geographical_symbol)
+    
+    # Setting number of ticks in the gridlines
+    
+    gl = set_number_of_ticks_in_Gridliner(gridliner=gl, 
+                                          nbins=n_coordinate_ticks.get('y_number', 3), 
+                                          locator='ylocator')
+    
+    
+    gl = set_number_of_ticks_in_Gridliner(gridliner=gl, 
+                                          nbins=n_coordinate_ticks.get('x_number', 3), 
+                                          locator='xlocator')
+    
+    
+    
+    # Fixing padding for gridline ticklabels
+    
+    gl.xpadding = ticklabel_padding.get('xpadding', 10)
+    gl.ypadding = ticklabel_padding.get('ypadding', 10)
+                    
     
     
     return gl
@@ -246,12 +275,7 @@ if '__main__' ==__name__:
         
     
     
-    import matplotlib.pyplot as plt
-    
-    import cartopy.crs as ccrs
-    
     from fancy_spatial_geometries_plot.custom_plots import get_standard_gdf
-    #SHP_path = r'F:\Philipe\Doutorado\BD\IBGE\IBGE_Estruturas_cartograficas_Brasil\2017\Unidades_Censitarias\Municipios\MUNICIPIOS_PARA.shp'
     
     SHP = get_standard_gdf()
     
@@ -267,7 +291,7 @@ if '__main__' ==__name__:
     fig, ax = plt.subplots(1, subplot_kw={'projection':projection})
     
     
-    SHP.plot(ax=ax)
+    SHP.plot(ax=ax, transform=Transform)
     
     Grider = ax.gridlines(draw_labels=True)
     
@@ -278,10 +302,10 @@ if '__main__' ==__name__:
     
     
     set_gridline_tick_axis_positions(Grider, 
-                                     positions={'top': False, 
-                                                'bottom': True, 
-                                                'left': True, 
-                                                'right': False})
+                                     {'top_labels':False,
+												 'left_labels':True,
+												 'right_labels':False,
+												 'bottom_labels':True}	)
     
    
     
@@ -299,59 +323,66 @@ if '__main__' ==__name__:
     
     ##################################################################################################################
     
-    fig, ax = plt.subplots(1, subplot_kw={'projection':projection})
+    fig, axes = plt.subplots(3,3, subplot_kw={'projection':projection},
+                             sharex=True, sharey=True)
     
+    axes = axes.ravel()
     
-    SHP.plot(ax=ax)
-    
-    
-    
-    gl = add_custom_gridline(ax, 
-                            
-                            gridline_attr=dict(draw_labels=True,
-                                               linewidth=1, 
-                                            color='black', 
-                                            alpha=0.35, 
-                                            linestyle='--'),
-                                               
-                            n_coordinate_ticks={'x_number':12,  'y_number':4},
-                            
-                            gridline_tick_formating=dict(latitude_tick_formating={'number_format':'.1f', # com duas casas decimais
-                                                                      'degree_symbol':'°', # u'\u00B0'
-                                                                      'north_hemisphere_str': 'N',
-                                                                      'south_hemisphere_str': 'S'} ,
-                                                               
+    for ax in axes:
+        SHP.plot(ax=ax)
         
-                                                        longitude_tick_formating={'number_format':'.2f', # com duas casas decimais
-                                                                       'degree_symbol':'°', # u'\u00B0'
-                                                                       'dateline_direction_label':True, # ONLY APPLICABLE TO LONGITUDE DATA
-                                                                       'west_hemisphere_str': 'W',
-                                                                       'east_hemisphere_str': 'E'}
-                                                                       
-                                                        ) ,
-                            
-                            gridline_xlabel_style = {'color': 'black', 
-                                                       #'weight': 'bold', 
-                                                       'rotation':90,
-                                                       'fontsize':12},
-                         
-                            gridline_ylabel_style = {'color': 'black', 
-                                                   #'weight': 'bold', 
-                                                   'rotation':0,
-                                                   'fontsize':18},  
-    							
-    							
+        
+        
+        gl = add_custom_gridline(ax, 
+                                
+                                gridline_attr=dict(draw_labels=True,
+                                                   linewidth=1, 
+                                                   color='black', 
+                                                   alpha=0.35, 
+                                                   linestyle='--',
+                                                   x_inline=False, 
+                                                   dms=True,
+                                                   y_inline=False),
+                                                   
+                                n_coordinate_ticks={'x_number':3,  'y_number':3},
+                                
+                                gridline_tick_formating=dict(latitude_tick_formating={'number_format':'{0:.1f}', # com duas casas decimais
+                                                                          'degree_symbol':'°', # u'\u00B0'
+                                                                          'north_hemisphere_str': 'N',
+                                                                          'south_hemisphere_str': 'S'} ,
+                                                                   
             
-                            
-    							gridline_tick_axis_positions={'xlabels_top':False,
-    												 'ylabels_left':True,
-    												 'ylabels_right':False,
-    												 'xlabels_bottom':True}												   
-                            
-                            )
+                                                            longitude_tick_formating={'number_format':'{0:.2f}', # com duas casas decimais
+                                                                           'degree_symbol':'°', # u'\u00B0'
+                                                                           'dateline_direction_label':True, # ONLY APPLICABLE TO LONGITUDE DATA
+                                                                           'west_hemisphere_str': 'O',
+                                                                           'east_hemisphere_str': 'L'}
+                                                                           
+                                                            ) ,
+                                
+                                gridline_xlabel_style = {'color': 'k', 
+                                                         #'weight': 'bold', 
+                                                         'rotation':45,
+                                                         'size':8,
+                                                         'ha':'right'},
+                             
+                                gridline_ylabel_style = {'color': 'k', 
+                                                       #'weight': 'bold', 
+                                                       'rotation':0,
+                                                       'ha':'right',
+                                                       'size':8},  
+        							
+        							ticklabel_padding = dict(xpadding=5, ypadding=3),
+                
+                                
+        							gridline_tick_axis_positions={'top_labels':False,
+    												 'left_labels':True,
+    												 'right_labels':False,
+    												 'bottom_labels':True}									   
+                                
+                                )
 
-   
-                     
+            
     
     fig.subplots_adjust(top=0.962,
                         bottom=0.193,

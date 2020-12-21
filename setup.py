@@ -11,7 +11,7 @@ with open('README.md') as readme_file:
 
 
 try:
-    with open('HISTORY.rst') as history_file:
+    with open('HISTORY.md') as history_file:
         
         history = history_file.read()
 except:
@@ -19,7 +19,7 @@ except:
 
 
 try:	
-    with open('Description.txt') as description_file:
+    with open('Description.md') as description_file:
         
         description = description_file.read()
 
